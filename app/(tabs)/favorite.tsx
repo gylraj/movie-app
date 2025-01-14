@@ -34,6 +34,8 @@ export default function FavoritesScreen() {
       <FlatList
         data={favorites}
         keyExtractor={(item) => item.imdbID}
+        numColumns={2}
+        contentContainerStyle={{ paddingHorizontal: 8 }}
         renderItem={({ item }) => (
           <MovieCard
             movie={item}

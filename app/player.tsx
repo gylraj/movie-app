@@ -2,7 +2,13 @@ import CustomSlider from '@/components/ui/CustomSlider';
 import { useEvent } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableWithoutFeedback,
+  TouchableOpacity,
+  BackHandler,
+} from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -10,10 +16,9 @@ const videoSource =
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
 export default function VideoScreen() {
-  // Initialize the video player
   const player = useVideoPlayer(videoSource, (player) => {
     player.loop = false;
-    player.play(); // Start playing automatically
+    player.play();
     player.timeUpdateEventInterval = 1;
   });
 
@@ -30,42 +35,51 @@ export default function VideoScreen() {
     currentOffsetFromLive: player.currentOffsetFromLive ?? 0,
     bufferedPosition: player.bufferedPosition ?? 0,
   });
+
   const duration = player.duration || 0;
 
-  const handleSeek = (value: number) => {
-    player.currentTime = value;
-    console.log('sample');
-    setIsSliding(false);
-  };
+  // Handle navigation back and set portrait mode
+  useEffect(() => {
+    const handleBackPress = () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT)
+        .then(() => {
+          console.log('Locked to portrait');
+        })
+        .catch((error) => {
+          console.error('Error locking to portrait:', error);
+        });
 
-  const handleSlidingStart = (value: number) => {
-    console.log('sample1231');
-    setIsSliding(true);
-  };
+      return false; // Allow default back behavior (exit screen)
+    };
 
-  const toggleControls = () => {
-    setShowControls((prev) => !prev);
-  };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
-  const togglePlayPause = () => {
-    if (isPlaying) {
-      player.pause();
-    } else {
-      player.play();
-    }
-  };
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+      backHandler.remove();
+    };
+  }, []);
 
   const toggleFullscreen = async () => {
     try {
       if (isFullscreen) {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT); // Exit fullscreen
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
       } else {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE); // Enter fullscreen
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
       }
       setIsFullscreen(!isFullscreen);
     } catch (error) {
       console.error('Failed to toggle fullscreen:', error);
     }
+  };
+
+  const handleSeek = (value: number) => {
+    player.currentTime = value;
+    setIsSliding(false);
+  };
+
+  const handleSlidingStart = () => {
+    setIsSliding(true);
   };
 
   const skipBackward = () => {
@@ -92,35 +106,33 @@ export default function VideoScreen() {
         <VideoView
           style={styles.video}
           player={player}
-          allowsFullscreen={false} // Disable default fullscreen to use custom fullscreen control
-          nativeControls={false} // Disable default controls to use custom overlay
+          allowsFullscreen={false}
+          nativeControls={false}
         />
       </View>
 
-      <TouchableWithoutFeedback onPress={toggleControls}>
+      <TouchableWithoutFeedback onPress={() => setShowControls((prev) => !prev)}>
         <View style={styles.touchOverlay}></View>
       </TouchableWithoutFeedback>
       {showControls && (
         <View style={styles.overlay} pointerEvents="box-none">
-          {/* Play/Pause and Skip Buttons */}
           <View style={styles.playbackContainer}>
-            {/* Backward 10 seconds */}
             <TouchableOpacity onPress={skipBackward} style={styles.skipButton}>
               <Ionicons name="play-back-outline" size={50} color="white" />
             </TouchableOpacity>
 
-            {/* Play/Pause Button - Centered */}
-            <TouchableOpacity onPress={togglePlayPause} style={styles.playPauseButton}>
+            <TouchableOpacity
+              onPress={() => (isPlaying ? player.pause() : player.play())}
+              style={styles.playPauseButton}
+            >
               <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={70} color="white" />
             </TouchableOpacity>
 
-            {/* Forward 10 seconds */}
             <TouchableOpacity onPress={skipForward} style={styles.skipButton}>
               <Ionicons name="play-forward-outline" size={50} color="white" />
             </TouchableOpacity>
           </View>
 
-          {/* Fullscreen Button - Top right */}
           <TouchableOpacity style={styles.fullscreenButton} onPress={toggleFullscreen}>
             <Ionicons
               name={isFullscreen ? 'contract-outline' : 'expand-outline'}
@@ -129,8 +141,7 @@ export default function VideoScreen() {
             />
           </TouchableOpacity>
 
-          {/* Custom Slider - Positioned at the bottom */}
-          <View style={styles.sliderContainer} pointerEvents="auto">
+          <View style={styles.sliderContainer}>
             <CustomSlider
               currentTime={currentTime}
               duration={duration}
@@ -149,24 +160,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'black',
   },
+  videoContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
   video: {
     width: '100%',
     height: 300,
   },
   touchOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center', // Centers the overlay and buttons vertically
     backgroundColor: 'transparent',
-  },
-  videoContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Semi-transparent background
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   playbackContainer: {
     flexDirection: 'row',

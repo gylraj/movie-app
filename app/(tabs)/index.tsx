@@ -93,6 +93,8 @@ export default function MoviesListScreen() {
         initialNumToRender={10} // Only render 10 items initially
         removeClippedSubviews={true} // Removes off-screen items
         keyExtractor={(item, index) => item.imdbID || index.toString()}
+        numColumns={2}
+        contentContainerStyle={{ paddingHorizontal: 8 }}
         renderItem={({ item }) => (
           <MovieCard
             movie={item}

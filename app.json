@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.nejlyg.movieapp"
     },
     "web": {
       "bundler": "metro",
@@ -39,16 +40,16 @@
           "supportsBackgroundPlayback": true,
           "supportsPictureInPicture": true
         }
-      ],
-      [
-        "expo-asset",
-        {
-          "assets": ["./assets/images/default-image.png"]
-        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2bed144a-acdb-4da2-a3f2-aa5d2baed8c2"
+      }
+    },
+    "owner": "nejlyg"
   }
 }

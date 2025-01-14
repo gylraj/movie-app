@@ -9,29 +9,30 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useEffect, useState } from 'react';
-import { MovieDetailResponse } from '@/types/movieTypes';
+import { Movie, MovieDetailResponse } from '@/types/movieTypes';
 import { fetchMovieDetails } from '@/api/omdbApi';
 import { useMovieDetailsStore } from '@/store/movieDetailsStore';
+import { useMovieStore } from '@/store/movieStore';
+import { Ionicons } from '@expo/vector-icons';
 
-const defaultImage = require('@/assets/images/default-image.png');
+const defaultImage = require('@/assets/images/defaultImage.png');
 
 export default function MovieDetailsScreen() {
   const { id } = useLocalSearchParams(); // Get movie ID from the URL
   const { setMovieDetails, getMovieDetails } = useMovieDetailsStore();
+
+  const { favorites, addFavorite, removeFavorite } = useMovieStore();
+
   const [movie, setMovie] = useState<MovieDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  console.log('movie', movie);
 
   useEffect(() => {
     if (id) {
       const savedDetails = getMovieDetails(id as string); // Check if movie details already exist
       if (savedDetails) {
-        console.log('savedDetails', savedDetails);
         setMovie(savedDetails);
         setIsLoading(false); // Avoid fetching if already available offline
       } else {
-        console.log('fetchMovie', id);
         fetchMovie(id as string);
       }
     }
@@ -49,12 +50,21 @@ export default function MovieDetailsScreen() {
     }
   };
 
+  const toggleFavorite = () => {
+    if (!movie) return;
+
+    const isFavorite = favorites.some((fav) => fav.imdbID === movie.imdbID);
+    if (isFavorite) {
+      removeFavorite(movie.imdbID);
+    } else {
+      addFavorite(movie);
+    }
+  };
+
   const source =
-    movie && movie.Poster && movie.Poster !== 'N/A'
-      ? {
-          uri: movie.Poster || defaultImage,
-        }
-      : defaultImage;
+    movie && movie.Poster && movie.Poster !== 'N/A' ? { uri: movie.Poster } : defaultImage;
+
+  const isFavorite = movie && favorites.some((fav) => fav.imdbID === movie?.imdbID);
 
   if (isLoading) {
     return (
@@ -75,34 +85,66 @@ export default function MovieDetailsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity
-        onPress={() => {
-          router.push('/player');
-        }}
-      >
-        <View style={styles.posterContainer}>
-          <Image source={source} style={styles.poster} />
+      {/* Movie Poster with Play Button */}
+      <View style={styles.posterWrapper}>
+        <Image source={source} style={styles.poster} />
+        <TouchableOpacity style={styles.playButton} onPress={() => router.push('/player')}>
+          <View style={styles.playButtonInner}>
+            <Ionicons name="play-circle" size={50} color="#ffffff" />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Movie Info */}
+      <View style={styles.movieInfoContainer}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title} numberOfLines={1}>
+            {movie.Title}
+          </Text>
+          <TouchableOpacity onPress={() => toggleFavorite()}>
+            <View style={styles.ratingContainer}>
+              <Text style={styles.favoriteIcon}>{isFavorite ? '★' : '☆'}</Text>
+              <Text style={styles.ratingText}>{movie.imdbRating || 'N/A'}</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+        <Text style={styles.year}>
+          {movie.Year} | {movie.Genre}
+        </Text>
+        {/* Plot Section */}
+        <Text style={styles.sectionHeading}>Plot Summary</Text>
+        <Text style={styles.plotText}>{movie.Plot || 'No plot available.'}</Text>
+        <Text style={styles.infoText}>Directed by: {movie.Director}</Text>
+        <Text style={styles.infoText}>Actors: {movie.Actors}</Text>
 
-      <Text style={styles.title}>{movie.Title}</Text>
-      <Text style={styles.year}>
-        {movie.Year} | {movie.Genre}
-      </Text>
-      <Text style={styles.infoText}>Directed by: {movie.Director}</Text>
-      <Text style={styles.infoText}>Actors: {movie.Actors}</Text>
-      <Text style={styles.infoText}>IMDB Rating: ⭐ {movie.imdbRating}</Text>
+        {/* User Review Section */}
+        <Text style={styles.sectionHeading}>User Reviews (from IMDb)</Text>
+        <Text style={styles.reviewText}>“{movie.Title} is highly rated by fans!”</Text>
+        <TouchableOpacity>
+          <Text style={styles.readMoreLink}>Read more</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.plotHeading}>Plot</Text>
-      <Text style={styles.plotText}>{movie.Plot}</Text>
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text style={styles.actionButtonText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    paddingBottom: 24,
     backgroundColor: '#f5f5f5',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -124,48 +166,131 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 18,
   },
-  posterContainer: {
+  posterWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: 300,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 0,
   },
   poster: {
     width: '100%',
-    height: 300,
-    borderRadius: 12,
-    backgroundColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    height: '100%',
+    // borderRadius: 12,
+    resizeMode: 'cover',
+  },
+  playButton: {
+    position: 'absolute',
+    top: '40%',
+    left: '45%',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButtonInner: {
+    backgroundColor: '#000000aa',
+    // padding: 10,
+    borderRadius: 50,
+  },
+  playText: {
+    fontSize: 32,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  movieInfoContainer: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
+    textAlign: 'left',
     color: '#333',
   },
   year: {
     fontSize: 16,
     color: '#555',
-    textAlign: 'center',
-    marginBottom: 16,
+    textAlign: 'left',
+    marginVertical: 8,
   },
   infoText: {
     fontSize: 16,
     marginBottom: 8,
     color: '#666',
   },
-  plotHeading: {
+  sectionHeading: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 24,
+    marginTop: 16,
     marginBottom: 8,
   },
   plotText: {
     fontSize: 16,
     color: '#444',
     lineHeight: 24,
+  },
+  castList: {
+    marginBottom: 0,
+    paddingVertical: 8,
+  },
+  castCard: {
+    padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginHorizontal: 8,
+    elevation: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  castName: {
+    fontSize: 14,
+    color: '#444',
+  },
+  reviewText: {
+    fontSize: 16,
+    fontStyle: 'italic',
+    color: '#444',
+  },
+  readMoreLink: {
+    fontSize: 16,
+    color: '#007AFF',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingVertical: 16,
+  },
+  actionButton: {
+    backgroundColor: '#e0e0e0',
+    padding: 12,
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    color: '#333',
+  },
+
+  favoriteButton: {
+    // position: 'absolute',
+    // bottom: 10,
+    // right: 10,
+  },
+  favoriteIcon: {
+    fontSize: 28,
+    color: 'red', // Highlighted color for favorites
+  },
+  ratingContainer: {
+    flexDirection: 'row', // Ensures the star and text are aligned horizontally
+    alignItems: 'center', // Ensures vertical centering
+    justifyContent: 'flex-end', // Moves the rating to the end of the row (for right alignment)
+  },
+  ratingText: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 4,
+    paddingTop: 6,
   },
 });
