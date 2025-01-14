@@ -8,9 +8,12 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
   BackHandler,
+  Text,
+  StatusBar,
 } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 const videoSource =
   'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
@@ -41,31 +44,33 @@ export default function VideoScreen() {
   // Handle navigation back and set portrait mode
   useEffect(() => {
     const handleBackPress = () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT)
-        .then(() => {
-          console.log('Locked to portrait');
-        })
-        .catch((error) => {
-          console.error('Error locking to portrait:', error);
-        });
-
-      return false; // Allow default back behavior (exit screen)
+      if (isFullscreen) {
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+        setIsFullscreen(false);
+        StatusBar.setHidden(false); // Show status bar when exiting fullscreen
+        return true; // Prevent default back navigation in fullscreen
+      } else {
+        player.pause(); // Pause video when exiting the screen
+        router.back(); // Navigate back if not in fullscreen
+        return true;
+      }
     };
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
     return () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
-      backHandler.remove();
+      backHandler.remove(); // Cleanup back handler
     };
-  }, []);
+  }, [isFullscreen]);
 
   const toggleFullscreen = async () => {
     try {
       if (isFullscreen) {
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+        StatusBar.setHidden(false); // Show status bar after exiting fullscreen
       } else {
         await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        StatusBar.setHidden(true); // Hide status bar in fullscreen
       }
       setIsFullscreen(!isFullscreen);
     } catch (error) {
@@ -102,6 +107,25 @@ export default function VideoScreen() {
 
   return (
     <View style={styles.container}>
+      {showControls && (
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => {
+              if (isFullscreen) {
+                ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+                setIsFullscreen(false);
+                StatusBar.setHidden(false);
+              }
+              player.pause();
+              router.back();
+            }}
+          >
+            <Ionicons name="arrow-back" size={30} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Video Player</Text>
+        </View>
+      )}
+
       <View style={styles.videoContainer}>
         <VideoView
           style={styles.video}
@@ -160,6 +184,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'black',
   },
+  header: {
+    position: 'absolute',
+    top: 40,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
   videoContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -191,7 +229,7 @@ const styles = StyleSheet.create({
   },
   fullscreenButton: {
     position: 'absolute',
-    top: 20,
+    top: 40,
     right: 20,
   },
   sliderContainer: {

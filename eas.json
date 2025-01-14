@@ -8,14 +8,14 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://www.omdbapi.com/",
+        "EXPO_PUBLIC_API_URL": "https://www.omdbapi.com/",
         "EXPO_PUBLIC_API_KEY": "b9bd48a6"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://www.omdbapi.com/",
+        "EXPO_PUBLIC_API_URL": "https://www.omdbapi.com/",
         "EXPO_PUBLIC_API_KEY": "b9bd48a6"
       }
     },

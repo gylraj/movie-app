@@ -45,16 +45,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="player"
           options={{
-            title: 'Player',
-            headerStyle: {
-              backgroundColor: 'black', // Header background color
-            },
-            headerTintColor: 'white', // Back arrow color
-            headerTitleStyle: {
-              color: 'white', // Title color
-              fontSize: 18,
-              fontWeight: 'bold',
-            },
+            headerShown: false,
           }}
         />
       </Stack>
