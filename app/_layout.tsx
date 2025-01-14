@@ -29,9 +29,29 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack initialRouteName="home">
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
+
+        <Stack.Screen name="movie-details/[id]" options={{ headerTitle: 'Movie Details' }} />
         <Stack.Screen name="+not-found" />
+        <Stack.Screen name="details" options={{ presentation: 'modal', headerTitle: 'Details' }} />
+        <Stack.Screen
+          name="player"
+          options={{
+            title: 'Player',
+            headerStyle: {
+              backgroundColor: 'black', // Header background color
+            },
+            headerTintColor: 'white', // Back arrow color
+            headerTitleStyle: {
+              color: 'white', // Title color
+              fontSize: 18,
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

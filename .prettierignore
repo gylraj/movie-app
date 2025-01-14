@@ -1,0 +1,7 @@
+node_modules/
+build/
+dist/
+.expo/
+app-example/
+assets/
+.vscode/
